@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -17,11 +18,11 @@ namespace GeneticTSPWinForms
         private StreamReader file;
         private int numberOfNodes;
         private int[,] nodes;
+        private double[,] distances;
         private int ratio;
         private List<int> globalRoute;
         private double globalRouteLength;
         private CancellationTokenSource tokenSource;
-        private CancellationToken token;
         public Form1()
         {
             InitializeComponent();
@@ -34,6 +35,8 @@ namespace GeneticTSPWinForms
             file = new StreamReader(filenameTextBox.Text);
             numberOfNodes = int.Parse(file.ReadLine());
             nodes = new int[numberOfNodes, 2];
+            distances = new double[numberOfNodes,numberOfNodes];
+            
             for (int i = 0; i < numberOfNodes; i++)
             {
                 string temp = file.ReadLine();
@@ -55,7 +58,6 @@ namespace GeneticTSPWinForms
                     y = nodes[i, 1];
                 }
             }
-            //filenameTextBox.Text = x + " " + y;
             if (x>y)
             {
                 ratio = x / 500;
@@ -79,6 +81,14 @@ namespace GeneticTSPWinForms
                 graphics.DrawEllipse(Pens.Black, nodes[i, 0] / ratio - 2, nodes[i, 1] / ratio - 2, 4, 4);
             }
             tourDiagram.Image = cityImage;
+            for (int i = 0; i < numberOfNodes; i++)
+            {
+                for (int j = 0; j < numberOfNodes; j++)
+                {
+                    distances[i,j] = Math.Sqrt(Math.Pow(nodes[i, 0] - nodes[j, 0], 2) +
+                                              Math.Pow(nodes[i, 1] - nodes[j, 1], 2));
+                }
+            }
         }
 
         private void startButton_Click(object sender, EventArgs e)
@@ -87,20 +97,14 @@ namespace GeneticTSPWinForms
             {
                 startButton.Text = "Stop";
                 tokenSource = new CancellationTokenSource();
-                token = tokenSource.Token;
 
                 Task tMain = Task.Run(() =>
                 {
                     globalRoute.Clear();
                     globalRouteLength = Double.MaxValue;
-                    /*for (int i = 0; i < 29; i++)
-                    {
-                        globalRoute.Add(i);
-                    }
-                    globalRoute.Add(0);*/
                     for (int k = 0; k < numberOfNodes; k++)
                     {
-                        if (token.IsCancellationRequested)
+                        if (tokenSource.Token.IsCancellationRequested)
                             break;
                         List<int> route = new List<int>();
                         List<int> notUsedNodes = new List<int>();
@@ -116,16 +120,12 @@ namespace GeneticTSPWinForms
                         while (notUsedNodes.Count > 0)
                         {
                             int actualNodeNumber = route[route.Count - 1];
-                            int actualNodeX = nodes[actualNodeNumber, 0];
-                            int actualNodeY = nodes[actualNodeNumber, 1];
                             double minLength = Double.MaxValue;
                             int chosenNode = -1;
 
                             foreach (int nodeNumber in notUsedNodes)
                             {
-                                int x = nodes[nodeNumber, 0];
-                                int y = nodes[nodeNumber, 1];
-                                double length = Math.Sqrt(Math.Pow(actualNodeX - x, 2) + Math.Pow(actualNodeY - y, 2));
+                                double length = distances[actualNodeNumber, nodeNumber];
                                 if (length < minLength)
                                 {
                                     minLength = length;
@@ -138,9 +138,8 @@ namespace GeneticTSPWinForms
                             notUsedNodes.Remove(chosenNode);
                         }
 
+                        routeLength += distances[route[0], route[route.Count - 1]];
                         route.Add(route[0]);
-                        routeLength += Math.Sqrt(Math.Pow(nodes[route[0], 0] - nodes[route[route.Count - 1], 0], 2) +
-                                                 Math.Pow(nodes[route[0], 1] - nodes[route[route.Count - 1], 1], 2));
 
                         if (routeLength < globalRouteLength)
                         {
@@ -150,29 +149,30 @@ namespace GeneticTSPWinForms
                             {
                                 globalRoute.Add(route[i]);
                             }
-                            Task tDr = Task.Run(() =>
-                            {
-                                DrawTour();
-                            });
+                            List<int> tourCopy = new List<int>(globalRoute);
+                            //Task tDr = Task.Run(() =>
+                            //{
+                                DrawTour(tourCopy);
+                            //});
+                                drawnTourLengthLabel.BeginInvoke(new MethodInvoker(() =>
+                                {
+                                    drawnTourLengthLabel.Text = globalRouteLength.ToString(CultureInfo.CurrentCulture);
+                                }));
                         }
                     }
                     startButton.BeginInvoke(new MethodInvoker(() =>
                     {
                         startButton.Text = "Start";
                     }));
-                }, token);
+                }, tokenSource.Token);
             }
             else
             {
                 tokenSource.Cancel();
-                //startButton.Text = "Start";
             }
-            //tMain.Wait();
-            //DrawTour();
-            //filenameTextBox.Text = globalRoute.Count.ToString();
         }
 
-        private void DrawTour()
+        private void DrawTour(List<int> globalRoute)
         {
             Image cityImage = new Bitmap(tourDiagram.Width, tourDiagram.Height);
             Graphics graphics = Graphics.FromImage(cityImage);
@@ -186,6 +186,11 @@ namespace GeneticTSPWinForms
                     nodes[globalRoute[i + 1], 0] / ratio, nodes[globalRoute[i + 1], 1] / ratio);
             }
             tourDiagram.Image = cityImage;
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            tourCityListTextBox.Text = globalRouteLength.ToString(CultureInfo.CurrentCulture);
         }
     }
 }
