@@ -100,24 +100,24 @@ namespace GeneticTSPWinForms
                     {
                         if (gaThreadCancellationToken.Token.IsCancellationRequested)
                             break;
-                        List<int> route = new List<int>();
-                        List<int> notUsedNodes = new List<int>();
-                        double routeLength = 0;
+                        List<int> tour = new List<int>();
+                        List<int> notUsedCities = new List<int>();
+                        double tourLength = 0;
                         for (int i = 0; i < numberOfCities; i++)
                         {
-                            notUsedNodes.Add(i);
+                            notUsedCities.Add(i);
                         }
 
                         int firstNode = k;
-                        route.Add(firstNode);
-                        notUsedNodes.Remove(firstNode);
-                        while (notUsedNodes.Count > 0)
+                        tour.Add(firstNode);
+                        notUsedCities.Remove(firstNode);
+                        while (notUsedCities.Count > 0)
                         {
-                            int actualNodeNumber = route[route.Count - 1];
+                            int actualNodeNumber = tour[tour.Count - 1];
                             double minLength = Double.MaxValue;
                             int chosenNode = -1;
 
-                            foreach (int nodeNumber in notUsedNodes)
+                            foreach (int nodeNumber in notUsedCities)
                             {
                                 double length = distancesBetweenCities[actualNodeNumber, nodeNumber];
                                 if (length < minLength)
@@ -127,19 +127,19 @@ namespace GeneticTSPWinForms
                                 }
                             }
 
-                            routeLength += minLength;
-                            route.Add(chosenNode);
-                            notUsedNodes.Remove(chosenNode);
+                            tourLength += minLength;
+                            tour.Add(chosenNode);
+                            notUsedCities.Remove(chosenNode);
                         }
 
-                        routeLength += distancesBetweenCities[route[0], route[route.Count - 1]];
-                        route.Add(route[0]);
+                        tourLength += distancesBetweenCities[tour[0], tour[tour.Count - 1]];
+                        tour.Add(tour[0]);
 
-                        if (routeLength < globalTourLength)
+                        if (tourLength < globalTourLength)
                         {
-                            globalTourLength = routeLength;
+                            globalTourLength = tourLength;
                             globalTour.Clear();
-                            foreach (int city in route)
+                            foreach (int city in tour)
                             {
                                 globalTour.Add(city);
                             }
