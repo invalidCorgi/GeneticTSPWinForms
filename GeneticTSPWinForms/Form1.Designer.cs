@@ -36,6 +36,10 @@
             this.drawnTourLengthLabel = new System.Windows.Forms.Label();
             this.tourCityListTextBox = new System.Windows.Forms.TextBox();
             this.button1 = new System.Windows.Forms.Button();
+            this.populationSizeTextBox = new System.Windows.Forms.TextBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.iterationsLabel = new System.Windows.Forms.Label();
+            this.iterationsTextBox = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.tourDiagram)).BeginInit();
             this.SuspendLayout();
             // 
@@ -104,7 +108,7 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(545, 314);
+            this.button1.Location = new System.Drawing.Point(521, 105);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 7;
@@ -112,11 +116,49 @@
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
+            // populationSizeTextBox
+            // 
+            this.populationSizeTextBox.Location = new System.Drawing.Point(521, 395);
+            this.populationSizeTextBox.Name = "populationSizeTextBox";
+            this.populationSizeTextBox.Size = new System.Drawing.Size(100, 20);
+            this.populationSizeTextBox.TabIndex = 8;
+            this.populationSizeTextBox.Text = "10000";
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(521, 376);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(81, 13);
+            this.label1.TabIndex = 9;
+            this.label1.Text = "Population size:";
+            // 
+            // iterationsLabel
+            // 
+            this.iterationsLabel.AutoSize = true;
+            this.iterationsLabel.Location = new System.Drawing.Point(518, 337);
+            this.iterationsLabel.Name = "iterationsLabel";
+            this.iterationsLabel.Size = new System.Drawing.Size(104, 13);
+            this.iterationsLabel.TabIndex = 10;
+            this.iterationsLabel.Text = "Number of iterations:";
+            // 
+            // iterationsTextBox
+            // 
+            this.iterationsTextBox.Location = new System.Drawing.Point(521, 353);
+            this.iterationsTextBox.Name = "iterationsTextBox";
+            this.iterationsTextBox.Size = new System.Drawing.Size(100, 20);
+            this.iterationsTextBox.TabIndex = 11;
+            this.iterationsTextBox.Text = "10000";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(783, 533);
+            this.Controls.Add(this.iterationsTextBox);
+            this.Controls.Add(this.iterationsLabel);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.populationSizeTextBox);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.tourCityListTextBox);
             this.Controls.Add(this.drawnTourLengthLabel);
@@ -143,6 +185,10 @@
         private System.Windows.Forms.Label drawnTourLengthLabel;
         private System.Windows.Forms.TextBox tourCityListTextBox;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.TextBox populationSizeTextBox;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label iterationsLabel;
+        private System.Windows.Forms.TextBox iterationsTextBox;
     }
 }
 

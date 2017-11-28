@@ -21,14 +21,19 @@ namespace GeneticTSPWinForms
         private double[,] distancesBetweenCities;
         private int citiesPositionsToGuiRatio;
         private List<int> globalTour;
-        private List<List<int>> tourPopulation;
+        private List<Tour> tourPopulation;
         private double globalTourLength;
         private CancellationTokenSource gaThreadCancellationToken;
+        private int populationSize;
+        private int iterations;
+        private Random rand;
         public Form1()
         {
             InitializeComponent();
             globalTourLength = Double.MaxValue;
             globalTour = new List<int>();
+            tourPopulation = new List<Tour>();
+            rand = new Random();
         }
 
         private void loadInstanceButton_Click(object sender, EventArgs e)
@@ -91,64 +96,30 @@ namespace GeneticTSPWinForms
             {
                 startButton.Text = "Stop";
                 gaThreadCancellationToken = new CancellationTokenSource();
+                populationSize = int.Parse(populationSizeTextBox.Text);
+                iterations = int.Parse(iterationsTextBox.Text);
 
                 Task tMain = Task.Run(() =>
                 {
                     globalTour.Clear();
+                    tourPopulation.Clear();
                     globalTourLength = Double.MaxValue;
-                    for (int k = 0; k < numberOfCities; k++)
+                    for (int i = 0; i < populationSize; i++)
                     {
-                        if (gaThreadCancellationToken.Token.IsCancellationRequested)
-                            break;
-                        List<int> tour = new List<int>();
-                        List<int> notUsedCities = new List<int>();
-                        double tourLength = 0;
-                        for (int i = 0; i < numberOfCities; i++)
+                        tourPopulation.Add(new Tour());
+                        tourPopulation[i].MakeRandomTour(numberOfCities,rand);
+                        tourPopulation[i].UpdateDistance(distancesBetweenCities);
+                    }
+                    tourPopulation.Sort();
+                    for (int k = 0; k < 1; k++)
+                    {
+                        globalTour = tourPopulation[0];
+                        globalTourLength = tourPopulation[0].GetDistance();
+                        DrawTour();
+                        drawnTourLengthLabel.BeginInvoke(new MethodInvoker(() =>
                         {
-                            notUsedCities.Add(i);
-                        }
-
-                        int firstNode = k;
-                        tour.Add(firstNode);
-                        notUsedCities.Remove(firstNode);
-                        while (notUsedCities.Count > 0)
-                        {
-                            int actualNodeNumber = tour[tour.Count - 1];
-                            double minLength = Double.MaxValue;
-                            int chosenNode = -1;
-
-                            foreach (int nodeNumber in notUsedCities)
-                            {
-                                double length = distancesBetweenCities[actualNodeNumber, nodeNumber];
-                                if (length < minLength)
-                                {
-                                    minLength = length;
-                                    chosenNode = nodeNumber;
-                                }
-                            }
-
-                            tourLength += minLength;
-                            tour.Add(chosenNode);
-                            notUsedCities.Remove(chosenNode);
-                        }
-
-                        tourLength += distancesBetweenCities[tour[0], tour[tour.Count - 1]];
-                        tour.Add(tour[0]);
-
-                        if (tourLength < globalTourLength)
-                        {
-                            globalTourLength = tourLength;
-                            globalTour.Clear();
-                            foreach (int city in tour)
-                            {
-                                globalTour.Add(city);
-                            }
-                            DrawTour();
-                            drawnTourLengthLabel.BeginInvoke(new MethodInvoker(() =>
-                            {
-                                drawnTourLengthLabel.Text = globalTourLength.ToString(CultureInfo.CurrentCulture);
-                            }));
-                        }
+                            drawnTourLengthLabel.Text = "Drawn tour length: "+globalTourLength;
+                        }));
                     }
                     startButton.BeginInvoke(new MethodInvoker(() =>
                     {
@@ -175,6 +146,10 @@ namespace GeneticTSPWinForms
                 graphics.DrawLine(Pens.Black, citiesPositions[globalTour[i], 0] / citiesPositionsToGuiRatio, citiesPositions[globalTour[i], 1] / citiesPositionsToGuiRatio,
                     citiesPositions[globalTour[i + 1], 0] / citiesPositionsToGuiRatio, citiesPositions[globalTour[i + 1], 1] / citiesPositionsToGuiRatio);
             }
+            graphics.DrawLine(Pens.Black, citiesPositions[globalTour[0], 0] / citiesPositionsToGuiRatio,
+                citiesPositions[globalTour[0], 1] / citiesPositionsToGuiRatio,
+                citiesPositions[globalTour[globalTour.Count - 1], 0] / citiesPositionsToGuiRatio,
+                citiesPositions[globalTour[globalTour.Count - 1], 1] / citiesPositionsToGuiRatio);
             tourDiagram.Image = cityImage;
         }
 
@@ -182,5 +157,7 @@ namespace GeneticTSPWinForms
         {
             tourCityListTextBox.Text = globalTourLength.ToString(CultureInfo.CurrentCulture);
         }
+
+
     }
 }
