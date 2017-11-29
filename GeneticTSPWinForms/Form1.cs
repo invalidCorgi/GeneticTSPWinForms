@@ -200,7 +200,7 @@ namespace GeneticTSPWinForms
             Tour C = new Tour();
             int index = 0;
             bool CurrentA = true;
-            while (index < A.Count() - 1)
+            while (index < A.Count)
             {
                 int len = rand.Next(1, (numberOfCities * MAX_CROSSOVER_LEN / 100));
                 int newIndex = index + len;
