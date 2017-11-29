@@ -22,18 +22,17 @@ namespace GeneticTSPWinForms
         private int citiesPositionsToGuiRatio;
         private List<int> globalTour;
         private List<Tour> tourPopulation;
-        private List<Tour> newTourPopulation;
         private double globalTourLength;
         private CancellationTokenSource gaThreadCancellationToken;
         private int populationSize;
         private int iterations;
         private Random rand;
-        
+
         //kufflowe zmienne
         private const int TOP_SURVIVORS = 10; //0-100 ile % najlepszych z poprzedniego pokolenia przejdzie dalej
         private const int BOTTOM_SURVIVORS = 10; //0-100 ile % najgorszych z poprzedniego pokolenia przejdzie dalej
         private const int MUTATION_PROBABILITY = 10; // 0-100 % SZANSA NA MUTACJĘ W 1 ROZWIAZANIU
-        private const int MAX_MUTATIONS = 10; //MAKSYMALNA LICZBA MUTACJI W 1 ROZWIAZANIU W 1 KROKU
+        private const int MAX_MUTATIONS = 1; //MAKSYMALNA LICZBA MUTACJI W 1 ROZWIAZANIU W 1 KROKU
         private const int MAX_CROSSOVER_LEN = 10; //0-100: PROCENT DLUGOSCI ROZWIAZANIA BEDACY MAKSYMALNA DLUGOSCIA SEGMENTU PRZY CROSSOVER
         //List<List<int>> Routes = new List<List<int>>();
         //List<List<int>> newRoutes = new List<List<int>>();
@@ -115,21 +114,19 @@ namespace GeneticTSPWinForms
                     globalTour.Clear();
                     tourPopulation.Clear();
                     globalTourLength = Double.MaxValue;
-                    for (int i = 0; i < populationSize; i++)
-                    {
-                        tourPopulation.Add(new Tour());
-                        tourPopulation[i].MakeRandomTour(numberOfCities,rand);
-                        tourPopulation[i].UpdateDistance(distancesBetweenCities);
-                    }
+                    Populate();
                     tourPopulation.Sort();
-                    for (int k = 0; k < 1; k++)
+                    for (int k = 0; k < iterations; k++)
                     {
+                        SimulateGeneration();
+                        CalculateCostAllToursInPolulation();
+                        tourPopulation.Sort();
                         globalTour = tourPopulation[0];
                         globalTourLength = tourPopulation[0].GetDistance();
                         DrawTour();
                         drawnTourLengthLabel.BeginInvoke(new MethodInvoker(() =>
                         {
-                            drawnTourLengthLabel.Text = "Drawn tour length: "+globalTourLength;
+                            drawnTourLengthLabel.Text = "Drawn tour length: " + globalTourLength;
                         }));
                     }
                     startButton.BeginInvoke(new MethodInvoker(() =>
@@ -161,7 +158,11 @@ namespace GeneticTSPWinForms
                 citiesPositions[globalTour[0], 1] / citiesPositionsToGuiRatio,
                 citiesPositions[globalTour[globalTour.Count - 1], 0] / citiesPositionsToGuiRatio,
                 citiesPositions[globalTour[globalTour.Count - 1], 1] / citiesPositionsToGuiRatio);
-            tourDiagram.Image = cityImage;
+            //tourDiagram.Image = cityImage;
+            tourDiagram.BeginInvoke(new MethodInvoker(() =>
+            {
+                tourDiagram.Image = cityImage;
+            }));
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -169,30 +170,28 @@ namespace GeneticTSPWinForms
             tourCityListTextBox.Text = globalTourLength.ToString(CultureInfo.CurrentCulture);
         }
 
-        //kufflowe funckjce
-
         private int FindPartner()
-        { //losuje indeks partnera
-            int n = tourPopulation.Count();
-            int maxRand = n * n * n * n;
+        { //losuje indeks partnera ze sklonnoscia do nizszych wartosci
+            int n = tourPopulation.Count;
+            int maxRand = (n+1) * (n+1);
             int r = rand.Next(1, maxRand);
-            return (int) (Math.Floor(Math.Sqrt(Math.Sqrt(r))) - 1);
+            return n-(int)Math.Floor(Math.Sqrt(r));
         }
 
-        private void Mutate(List<int> Route)
+        private void Mutate(Tour Tour)
         { //dokonuje mutacji na zadanym rozwiazaniu
-            int maxRand = Route.Count();
+            int maxRand = Tour.Count();
             for (int i = 0; i < MAX_MUTATIONS; i++)
             {
-                int a = rand.Next(0, maxRand);
+                int a = rand.Next(maxRand);
                 int b = a;
                 while (a == b)
                 {
                     b = rand.Next(0, maxRand);
                 }
-                int tmp = Route[a];
-                Route[a] = Route[b];
-                Route[b] = tmp;
+                int tmp = Tour[a];
+                Tour[a] = Tour[b];
+                Tour[b] = tmp;
             }
         }
 
@@ -233,28 +232,14 @@ namespace GeneticTSPWinForms
             {
                 b = FindPartner();
             }
-            Tour C;
-            C = Crossover(tourPopulation[a], tourPopulation[b]);
-            return C;
+            return Crossover(tourPopulation[a], tourPopulation[b]);
         }
-
-        /*int CalculateCost(List<int> Route)
-        { //ASDFG
-            return magia //kod na obliczanie ceny danej drogi
-}
-
-        void SortRoutes()
-        { //kod na sortowanie listy list Routes po kluczu CalculateCost
-
-        }*/
 
         private void SimulateGeneration()
         { //robi jeden krok populacji, nowa populacja ma rozmiar identyczny z poprzednią
-            newTourPopulation.Clear();
-            //SortRoutes();
-            tourPopulation.Sort();
-            int FitToCopy = tourPopulation.Count() * TOP_SURVIVORS / 100;
-            int UnfitToCopy = tourPopulation.Count() * BOTTOM_SURVIVORS / 100;
+            List<Tour> newTourPopulation = new List<Tour>();
+            int FitToCopy = tourPopulation.Count * TOP_SURVIVORS / 100;
+            int UnfitToCopy = tourPopulation.Count * BOTTOM_SURVIVORS / 100;
             int i;
             for (i = 0; i < FitToCopy; i++)
             { //kopiowanie najbardziej fit
@@ -266,7 +251,7 @@ namespace GeneticTSPWinForms
                 }
                 newTourPopulation.Add(tourPopulation[i]);
             }
-            for (; i < tourPopulation.Count() - UnfitToCopy; i++)
+            for (; i < tourPopulation.Count - UnfitToCopy; i++)
             {
                 newTourPopulation.Add(Breed());
             }
@@ -282,15 +267,63 @@ namespace GeneticTSPWinForms
             tourPopulation = newTourPopulation;
         }
 
-        private void Populate()
-        { //dodaje nowe rozwiazania zeby pierwotny rozmiar populacji sie zgadzal
-          //tutaj kod heurystyki generujacej poczatkowe
-            while (tourPopulation.Count() < populationSize)
+        private void Populate() //tworzenie poczatkowej populacji - greedy dla kazdego miasta + zapelnienie reszty ich krzyzowkami i mutacjami
+        { 
+            for (int city = 0; city < numberOfCities; city++)
             {
-                Tour C = Breed();
-                Mutate(C);
-                tourPopulation.Add(C);
+                Greedy(city);
             }
+            CalculateCostAllToursInPolulation(); //musimy miec po czym sortowac
+            tourPopulation.Sort(); //sortujemy, zeby reszta tworzonych zaraz tras preferowala tworzenie sie z lepszych tras
+            while (tourPopulation.Count < populationSize)
+            {
+                Tour Tour = Breed();
+                Mutate(Tour);
+                tourPopulation.Add(Tour);
+            }
+        }
+
+        private void CalculateCostAllToursInPolulation()
+        {
+            foreach (var tour in tourPopulation)
+            {
+                tour.UpdateDistance(distancesBetweenCities);
+            }
+        }
+
+        private void Greedy(int firstCity)
+        {
+            Tour tour = new Tour();
+            List<int> notUsedCities = new List<int>();
+            double tourLength = 0;
+            for (int i = 0; i < numberOfCities; i++)
+            {
+                notUsedCities.Add(i);
+            }
+
+            tour.Add(firstCity);
+            notUsedCities.Remove(firstCity);
+            while (notUsedCities.Count > 0)
+            {
+                int actualNodeNumber = tour[tour.Count - 1];
+                double minLength = Double.MaxValue;
+                int chosenNode = -1;
+
+                foreach (int nodeNumber in notUsedCities)
+                {
+                    double length = distancesBetweenCities[actualNodeNumber, nodeNumber];
+                    if (length < minLength)
+                    {
+                        minLength = length;
+                        chosenNode = nodeNumber;
+                    }
+                }
+
+                tourLength += minLength;
+                tour.Add(chosenNode);
+                notUsedCities.Remove(chosenNode);
+            }
+            tourPopulation.Add(tour);
         }
     }
 }
