@@ -22,11 +22,22 @@ namespace GeneticTSPWinForms
         private int citiesPositionsToGuiRatio;
         private List<int> globalTour;
         private List<Tour> tourPopulation;
+        private List<Tour> newTourPopulation;
         private double globalTourLength;
         private CancellationTokenSource gaThreadCancellationToken;
         private int populationSize;
         private int iterations;
         private Random rand;
+        
+        //kufflowe zmienne
+        private const int TOP_SURVIVORS = 10; //0-100 ile % najlepszych z poprzedniego pokolenia przejdzie dalej
+        private const int BOTTOM_SURVIVORS = 10; //0-100 ile % najgorszych z poprzedniego pokolenia przejdzie dalej
+        private const int MUTATION_PROBABILITY = 10; // 0-100 % SZANSA NA MUTACJĘ W 1 ROZWIAZANIU
+        private const int MAX_MUTATIONS = 10; //MAKSYMALNA LICZBA MUTACJI W 1 ROZWIAZANIU W 1 KROKU
+        private const int MAX_CROSSOVER_LEN = 10; //0-100: PROCENT DLUGOSCI ROZWIAZANIA BEDACY MAKSYMALNA DLUGOSCIA SEGMENTU PRZY CROSSOVER
+        //List<List<int>> Routes = new List<List<int>>();
+        //List<List<int>> newRoutes = new List<List<int>>();
+
         public Form1()
         {
             InitializeComponent();
@@ -158,6 +169,128 @@ namespace GeneticTSPWinForms
             tourCityListTextBox.Text = globalTourLength.ToString(CultureInfo.CurrentCulture);
         }
 
+        //kufflowe funckjce
 
+        private int FindPartner()
+        { //losuje indeks partnera
+            int n = tourPopulation.Count();
+            int maxRand = n * n * n * n;
+            int r = rand.Next(1, maxRand);
+            return (int) (Math.Floor(Math.Sqrt(Math.Sqrt(r))) - 1);
+        }
+
+        private void Mutate(List<int> Route)
+        { //dokonuje mutacji na zadanym rozwiazaniu
+            int maxRand = Route.Count();
+            for (int i = 0; i < MAX_MUTATIONS; i++)
+            {
+                int a = rand.Next(0, maxRand);
+                int b = a;
+                while (a == b)
+                {
+                    b = rand.Next(0, maxRand);
+                }
+                int tmp = Route[a];
+                Route[a] = Route[b];
+                Route[b] = tmp;
+            }
+        }
+
+        private Tour Crossover(Tour A, Tour B)
+        { //Robi crossover rozwiazania A i B
+            Tour C = new Tour();
+            int index = 0;
+            bool CurrentA = true;
+            while (index < A.Count() - 1)
+            {
+                int len = rand.Next(1, (numberOfCities * MAX_CROSSOVER_LEN / 100));
+                int newIndex = index + len;
+                if (newIndex >= A.Count())
+                {
+                    newIndex = A.Count() - 1;
+                }
+                for (; index <= newIndex; index++)
+                {
+                    if (CurrentA)
+                    {
+                        C.Add(A[index]);
+                    }
+                    else
+                    {
+                        C.Add(B[index]);
+                    }
+                }
+                CurrentA = !CurrentA;
+            }
+            return C;
+        }
+
+        private Tour Breed()
+        { //generuje nowego osobnika z 2 wybranych losowo z populacji i dodaje go do nowej populacji
+            int a = FindPartner();
+            int b = a;
+            while (a == b)
+            {
+                b = FindPartner();
+            }
+            Tour C;
+            C = Crossover(tourPopulation[a], tourPopulation[b]);
+            return C;
+        }
+
+        /*int CalculateCost(List<int> Route)
+        { //ASDFG
+            return magia //kod na obliczanie ceny danej drogi
+}
+
+        void SortRoutes()
+        { //kod na sortowanie listy list Routes po kluczu CalculateCost
+
+        }*/
+
+        private void SimulateGeneration()
+        { //robi jeden krok populacji, nowa populacja ma rozmiar identyczny z poprzednią
+            newTourPopulation.Clear();
+            //SortRoutes();
+            tourPopulation.Sort();
+            int FitToCopy = tourPopulation.Count() * TOP_SURVIVORS / 100;
+            int UnfitToCopy = tourPopulation.Count() * BOTTOM_SURVIVORS / 100;
+            int i;
+            for (i = 0; i < FitToCopy; i++)
+            { //kopiowanie najbardziej fit
+                if (i != 0 && rand.Next(1, 100) <= MUTATION_PROBABILITY)
+                {
+                    Tour C = tourPopulation[i];
+                    Mutate(C);
+                    newTourPopulation.Add(C);
+                }
+                newTourPopulation.Add(tourPopulation[i]);
+            }
+            for (; i < tourPopulation.Count() - UnfitToCopy; i++)
+            {
+                newTourPopulation.Add(Breed());
+            }
+            for (; i < tourPopulation.Count; i++)
+            {
+                if (rand.Next(1, 100) <= MUTATION_PROBABILITY)
+                {
+                    Tour C = tourPopulation[i];
+                    Mutate(C);
+                    newTourPopulation.Add(C);
+                }
+            }
+            tourPopulation = newTourPopulation;
+        }
+
+        private void Populate()
+        { //dodaje nowe rozwiazania zeby pierwotny rozmiar populacji sie zgadzal
+          //tutaj kod heurystyki generujacej poczatkowe
+            while (tourPopulation.Count() < populationSize)
+            {
+                Tour C = Breed();
+                Mutate(C);
+                tourPopulation.Add(C);
+            }
+        }
     }
 }
