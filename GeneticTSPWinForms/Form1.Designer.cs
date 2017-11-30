@@ -40,6 +40,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.iterationsLabel = new System.Windows.Forms.Label();
             this.iterationsTextBox = new System.Windows.Forms.TextBox();
+            this.iterationLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.tourDiagram)).BeginInit();
             this.SuspendLayout();
             // 
@@ -100,7 +101,7 @@
             // 
             // tourCityListTextBox
             // 
-            this.tourCityListTextBox.Location = new System.Drawing.Point(521, 38);
+            this.tourCityListTextBox.Location = new System.Drawing.Point(521, 64);
             this.tourCityListTextBox.Multiline = true;
             this.tourCityListTextBox.Name = "tourCityListTextBox";
             this.tourCityListTextBox.Size = new System.Drawing.Size(100, 61);
@@ -108,7 +109,7 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(521, 105);
+            this.button1.Location = new System.Drawing.Point(521, 131);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 7;
@@ -150,11 +151,21 @@
             this.iterationsTextBox.TabIndex = 11;
             this.iterationsTextBox.Text = "10000";
             // 
+            // iterationLabel
+            // 
+            this.iterationLabel.AutoSize = true;
+            this.iterationLabel.Location = new System.Drawing.Point(518, 25);
+            this.iterationLabel.Name = "iterationLabel";
+            this.iterationLabel.Size = new System.Drawing.Size(57, 13);
+            this.iterationLabel.TabIndex = 12;
+            this.iterationLabel.Text = "Iteration: 0";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(783, 533);
+            this.Controls.Add(this.iterationLabel);
             this.Controls.Add(this.iterationsTextBox);
             this.Controls.Add(this.iterationsLabel);
             this.Controls.Add(this.label1);
@@ -189,6 +200,7 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label iterationsLabel;
         private System.Windows.Forms.TextBox iterationsTextBox;
+        private System.Windows.Forms.Label iterationLabel;
     }
 }
 

@@ -30,9 +30,9 @@ namespace GeneticTSPWinForms
 
         //kufflowe zmienne
         private const int TOP_SURVIVORS = 10; //0-100 ile % najlepszych z poprzedniego pokolenia przejdzie dalej
-        private const int BOTTOM_SURVIVORS = 10; //0-100 ile % najgorszych z poprzedniego pokolenia przejdzie dalej
-        private const int MUTATION_PROBABILITY = 10; // 0-100 % SZANSA NA MUTACJĘ W 1 ROZWIAZANIU
-        private const int MAX_MUTATIONS = 1; //MAKSYMALNA LICZBA MUTACJI W 1 ROZWIAZANIU W 1 KROKU
+        private const int BOTTOM_SURVIVORS = 2; //0-100 ile % najgorszych z poprzedniego pokolenia przejdzie dalej
+        private const int MUTATION_PROBABILITY = 50; // 0-100 % SZANSA NA MUTACJĘ W 1 ROZWIAZANIU
+        private const int MAX_MUTATIONS = 3; //MAKSYMALNA LICZBA MUTACJI W 1 ROZWIAZANIU W 1 KROKU
         private const int MAX_CROSSOVER_LEN = 10; //0-100: PROCENT DLUGOSCI ROZWIAZANIA BEDACY MAKSYMALNA DLUGOSCIA SEGMENTU PRZY CROSSOVER
         //List<List<int>> Routes = new List<List<int>>();
         //List<List<int>> newRoutes = new List<List<int>>();
@@ -118,15 +118,24 @@ namespace GeneticTSPWinForms
                     tourPopulation.Sort();
                     for (int k = 0; k < iterations; k++)
                     {
+                        if(gaThreadCancellationToken.IsCancellationRequested)
+                            break;
                         SimulateGeneration();
                         CalculateCostAllToursInPolulation();
                         tourPopulation.Sort();
-                        globalTour = tourPopulation[0];
-                        globalTourLength = tourPopulation[0].GetDistance();
-                        DrawTour();
-                        drawnTourLengthLabel.BeginInvoke(new MethodInvoker(() =>
+                        if (globalTourLength > tourPopulation[0].GetDistance())
                         {
-                            drawnTourLengthLabel.Text = "Drawn tour length: " + globalTourLength;
+                            globalTour = tourPopulation[0];
+                            globalTourLength = tourPopulation[0].GetDistance();
+                            DrawTour();
+                            drawnTourLengthLabel.BeginInvoke(new MethodInvoker(() =>
+                            {
+                                drawnTourLengthLabel.Text = "Drawn tour length: " + globalTourLength;
+                            }));
+                        }
+                        iterationLabel.BeginInvoke(new MethodInvoker(() =>
+                        {
+                            iterationLabel.Text = "Iteration: " + k;
                         }));
                     }
                     startButton.BeginInvoke(new MethodInvoker(() =>
@@ -175,6 +184,7 @@ namespace GeneticTSPWinForms
             int n = tourPopulation.Count;
             int maxRand = (n+1) * (n+1);
             int r = rand.Next(1, maxRand);
+            
             return n-(int)Math.Floor(Math.Sqrt(r));
         }
 
@@ -199,27 +209,31 @@ namespace GeneticTSPWinForms
         { //Robi crossover rozwiazania A i B
             Tour C = new Tour();
             int index = 0;
-            bool CurrentA = true;
-            while (index < A.Count)
+            //C = A;
+            int start = rand.Next(0, numberOfCities - 2);
+            int len = rand.Next(1, (numberOfCities - 1 - start));
+            List<int> S;
+            S = A.GetRange(start, len);
+            int i = 0;
+            while (index < start)
             {
-                int len = rand.Next(1, (numberOfCities * MAX_CROSSOVER_LEN / 100));
-                int newIndex = index + len;
-                if (newIndex >= A.Count())
+                if (!S.Contains(B[i]))
                 {
-                    newIndex = A.Count() - 1;
+                    C.Add(B[i]);
+                    index++;
                 }
-                for (; index <= newIndex; index++)
+                i++;
+            }
+            C.AddRange(S);
+            index += len;
+            while (index < A.Count())
+            {
+                if (!S.Contains(B[i]))
                 {
-                    if (CurrentA)
-                    {
-                        C.Add(A[index]);
-                    }
-                    else
-                    {
-                        C.Add(B[index]);
-                    }
+                    C.Add(B[i]);
+                    index++;
                 }
-                CurrentA = !CurrentA;
+                i++;
             }
             return C;
         }
@@ -249,7 +263,11 @@ namespace GeneticTSPWinForms
                     Mutate(C);
                     newTourPopulation.Add(C);
                 }
-                newTourPopulation.Add(tourPopulation[i]);
+                else
+                {
+                    newTourPopulation.Add(tourPopulation[i]);
+                }
+                
             }
             for (; i < tourPopulation.Count - UnfitToCopy; i++)
             {
