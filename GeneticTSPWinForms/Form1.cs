@@ -29,6 +29,7 @@ namespace GeneticTSPWinForms
         private Random rand;
 
         //kufflowe zmienne
+        //test
         private int TOP_SURVIVORS = 50; //0-100 ile % najlepszych z poprzedniego pokolenia przejdzie dalej
         private const int BOTTOM_SURVIVORS = 0; //0-100 ile % najgorszych z poprzedniego pokolenia przejdzie dalej
         private int MUTATION_PROBABILITY = 10; // 0-100 % SZANSA NA MUTACJĘ W 1 ROZWIAZANIU
