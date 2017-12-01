@@ -168,7 +168,9 @@ namespace GeneticTSPWinForms
                                     Prev = Next;
                                 }
                             }
-                            tourPopulation = tourPopulation.OrderBy(o => o.GetDistance()).ToList();
+                            CalculateCostAllToursInPolulation();
+                            //tourPopulation = tourPopulation.OrderBy(o => o.GetDistance()).ToList();
+                            tourPopulation.Sort();
                         }
                     }
                     startButton.BeginInvoke(new MethodInvoker(() =>
@@ -344,7 +346,8 @@ namespace GeneticTSPWinForms
             {
                 if (rand.Next(1, 100) <= MUTATION_PROBABILITY * 2)
                 {
-                    Tour C = tourPopulation[i];
+                    Tour C = new Tour();
+                    C.AddRange(tourPopulation[i].ToArray());
                     Mutate(C);
                     newTourPopulation.Add(C);
                 }
@@ -359,8 +362,8 @@ namespace GeneticTSPWinForms
                 Greedy(city);
             }
             CalculateCostAllToursInPolulation(); //musimy miec po czym sortowac
-            tourPopulation = tourPopulation.OrderBy(o=>o.GetDistance()).ToList();
-            //tourPopulation.Sort(); //sortujemy, zeby reszta tworzonych zaraz tras preferowala tworzenie sie z lepszych tras
+            //tourPopulation = tourPopulation.OrderBy(o=>o.GetDistance()).ToList();
+            tourPopulation.Sort(); //sortujemy, zeby reszta tworzonych zaraz tras preferowala tworzenie sie z lepszych tras
             while (tourPopulation.Count < populationSize)
             {
                 Tour Tour = Breed();

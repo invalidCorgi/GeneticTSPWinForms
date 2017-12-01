@@ -55,7 +55,7 @@ namespace GeneticTSPWinForms
 
         public int CompareTo(Tour other)
         {
-            if (Math.Abs(this.distance - other.distance) < 0.1)
+            /*if (Math.Abs(this.distance - other.distance) < 0.1)
             {
                 return 0;
             }
@@ -66,7 +66,16 @@ namespace GeneticTSPWinForms
             else
             {
                 return -1;
+            }*/
+            if (this.distance > other.distance)
+            {
+                return 1;
             }
+            if (this.distance < other.distance)
+            {
+                return -1;
+            }
+            return 0;
         }
     }
 }
