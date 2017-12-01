@@ -20,7 +20,7 @@ namespace GeneticTSPWinForms
         private int[,] citiesPositions;
         private double[,] distancesBetweenCities;
         private int citiesPositionsToGuiRatio;
-        private List<int> globalTour;
+        private Tour globalTour;
         private List<Tour> tourPopulation;
         private double globalTourLength;
         private CancellationTokenSource gaThreadCancellationToken;
@@ -43,7 +43,7 @@ namespace GeneticTSPWinForms
         {
             InitializeComponent();
             globalTourLength = Double.MaxValue;
-            globalTour = new List<int>();
+            globalTour = new Tour();
             tourPopulation = new List<Tour>();
             rand = new Random();
         }
@@ -124,16 +124,17 @@ namespace GeneticTSPWinForms
                     for (int k = 0; k < iterations; k++)
                     {
                         duplicatesTimer++;
-                        if(gaThreadCancellationToken.IsCancellationRequested)
+                        if (gaThreadCancellationToken.IsCancellationRequested)
                             break;
                         SimulateGeneration();
                         CalculateCostAllToursInPolulation();
                         tourPopulation = tourPopulation.OrderBy(o => o.GetDistance()).ToList();
                         if (globalTourLength > tourPopulation[0].GetDistance())
                         {
+                            Tour Changed = findReplacement(tourPopulation[0], globalTour);
                             globalTour = tourPopulation[0];
                             globalTourLength = tourPopulation[0].GetDistance();
-                            DrawTour();
+                            DrawTour(Changed);
                             drawnTourLengthLabel.BeginInvoke(new MethodInvoker(() =>
                             {
                                 drawnTourLengthLabel.Text = "Drawn tour length: " + globalTourLength;
@@ -160,11 +161,13 @@ namespace GeneticTSPWinForms
                                     if (Prev.Hash() == Next.Hash())
                                     {
                                         Mutate(tourPopulation[i]);
-                                    } else
+                                    }
+                                    else
                                     {
                                         Prev = Next;
                                     }
-                                } else
+                                }
+                                else
                                 {
                                     Prev = Next;
                                 }
@@ -186,7 +189,7 @@ namespace GeneticTSPWinForms
             }
         }
 
-        private void DrawTour()
+        private void DrawTour(Tour whatsNew)
         {
             Image cityImage = new Bitmap(tourDiagram.Width, tourDiagram.Height);
             Graphics graphics = Graphics.FromImage(cityImage);
@@ -194,12 +197,32 @@ namespace GeneticTSPWinForms
             {
                 graphics.DrawEllipse(Pens.Black, citiesPositions[i, 0] / citiesPositionsToGuiRatio - 2, citiesPositions[i, 1] / citiesPositionsToGuiRatio - 2, 4, 4);
             }
+            Pen Color = Pens.Black;
+
             for (int i = 0; i < globalTour.Count - 1; i++)
             {
-                graphics.DrawLine(Pens.Black, citiesPositions[globalTour[i], 0] / citiesPositionsToGuiRatio, citiesPositions[globalTour[i], 1] / citiesPositionsToGuiRatio,
+                if (whatsNew.Count > 0) 
+                if (whatsNew.IndexOf(globalTour[i + 1]) != -1)
+                {
+                    Color = Pens.Red;
+                }
+                else
+                {
+                    Color = Pens.Black;
+                }
+                graphics.DrawLine(Color, citiesPositions[globalTour[i], 0] / citiesPositionsToGuiRatio, citiesPositions[globalTour[i], 1] / citiesPositionsToGuiRatio,
                     citiesPositions[globalTour[i + 1], 0] / citiesPositionsToGuiRatio, citiesPositions[globalTour[i + 1], 1] / citiesPositionsToGuiRatio);
             }
-            graphics.DrawLine(Pens.Red, citiesPositions[globalTour[0], 0] / citiesPositionsToGuiRatio,
+            if (whatsNew.Count > 0)
+                if (whatsNew.IndexOf(globalTour[0]) != -1)
+            {
+                Color = Pens.Red;
+            }
+            else
+            {
+                Color = Pens.Black;
+            }
+            graphics.DrawLine(Color, citiesPositions[globalTour[0], 0] / citiesPositionsToGuiRatio,
                 citiesPositions[globalTour[0], 1] / citiesPositionsToGuiRatio,
                 citiesPositions[globalTour[globalTour.Count - 1], 0] / citiesPositionsToGuiRatio,
                 citiesPositions[globalTour[globalTour.Count - 1], 1] / citiesPositionsToGuiRatio);
@@ -213,7 +236,8 @@ namespace GeneticTSPWinForms
         private void button1_Click(object sender, EventArgs e)
         {
             tourCityListTextBox.Text = "";
-            foreach (int i in globalTour) {
+            foreach (int i in globalTour)
+            {
                 tourCityListTextBox.AppendText(i.ToString());
                 tourCityListTextBox.AppendText(Environment.NewLine);
             }
@@ -229,7 +253,8 @@ namespace GeneticTSPWinForms
                 if (i < globalTour.Count - 1)
                 {
                     next = globalTour[i + 1];
-                } else
+                }
+                else
                 {
                     next = globalTour[0];
                 }
@@ -242,10 +267,10 @@ namespace GeneticTSPWinForms
         private int FindPartner()
         { //losuje indeks partnera ze sklonnoscia do nizszych wartosci
             int n = tourPopulation.Count;
-            int maxRand = (n+1) * (n+1);
+            int maxRand = (n + 1) * (n + 1);
             int r = rand.Next(1, maxRand);
-            
-            return n-(int)Math.Floor(Math.Sqrt(r));
+
+            return n - (int)Math.Floor(Math.Sqrt(r));
         }
 
         private void Mutate(Tour Tour)
@@ -319,7 +344,7 @@ namespace GeneticTSPWinForms
 
         private void SimulateGeneration()
         { //robi jeden krok populacji, nowa populacja ma rozmiar identyczny z poprzednią
-            
+
             List<Tour> newTourPopulation = new List<Tour>();
             int FitToCopy = tourPopulation.Count * TOP_SURVIVORS / 100;
             int UnfitToCopy = BOTTOM_SURVIVORS;
@@ -337,7 +362,7 @@ namespace GeneticTSPWinForms
                 {
                     newTourPopulation.Add(tourPopulation[i]);
                 }
-                
+
             }
             for (; i < tourPopulation.Count - UnfitToCopy; i++)
             {
@@ -357,7 +382,7 @@ namespace GeneticTSPWinForms
         }
 
         private void Populate() //tworzenie poczatkowej populacji - greedy dla kazdego miasta + zapelnienie reszty ich krzyzowkami i mutacjami
-        { 
+        {
             for (int city = 0; city < numberOfCities; city++)
             {
                 Greedy(city);
@@ -434,6 +459,40 @@ namespace GeneticTSPWinForms
         private void label3_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private Tour findReplacement(Tour Next, Tour Prev)
+        {
+            Tour B = new Tour();
+            int k, p;
+            for (int i = 0; i < Prev.Count; i++)
+            {
+                k = Next.IndexOf(Prev[i]);
+                p = k;
+                if (k == numberOfCities - 1)
+                {
+                    p = 0;
+                }
+                else
+                {
+                    p += 1;
+                }
+                if (i != Next.Count - 1)
+                {
+                    if (Next[p] != Prev[i + 1])
+                    {
+                        B.Add(Next[p]);
+                    }
+                }
+                else
+                {
+                    if (Next[p] != Prev[0])
+                    {
+                        B.Add(Next[p]);
+                    }
+                }
+            }
+            return B;
         }
     }
 }
