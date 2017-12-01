@@ -29,11 +29,12 @@ namespace GeneticTSPWinForms
         private Random rand;
 
         //kufflowe zmienne
-        private const int TOP_SURVIVORS = 10; //0-100 ile % najlepszych z poprzedniego pokolenia przejdzie dalej
-        private const int BOTTOM_SURVIVORS = 2; //0-100 ile % najgorszych z poprzedniego pokolenia przejdzie dalej
-        private const int MUTATION_PROBABILITY = 50; // 0-100 % SZANSA NA MUTACJĘ W 1 ROZWIAZANIU
-        private const int MAX_MUTATIONS = 3; //MAKSYMALNA LICZBA MUTACJI W 1 ROZWIAZANIU W 1 KROKU
+        private int TOP_SURVIVORS = 50; //0-100 ile % najlepszych z poprzedniego pokolenia przejdzie dalej
+        private const int BOTTOM_SURVIVORS = 0; //0-100 ile % najgorszych z poprzedniego pokolenia przejdzie dalej
+        private int MUTATION_PROBABILITY = 10; // 0-100 % SZANSA NA MUTACJĘ W 1 ROZWIAZANIU
+        private int MAX_MUTATIONS = 2; //MAKSYMALNA LICZBA MUTACJI W 1 ROZWIAZANIU W 1 KROKU
         private const int MAX_CROSSOVER_LEN = 10; //0-100: PROCENT DLUGOSCI ROZWIAZANIA BEDACY MAKSYMALNA DLUGOSCIA SEGMENTU PRZY CROSSOVER
+        private const int duplicatesRemovalInterval = 2;
         //List<List<int>> Routes = new List<List<int>>();
         //List<List<int>> newRoutes = new List<List<int>>();
 
@@ -108,21 +109,25 @@ namespace GeneticTSPWinForms
                 gaThreadCancellationToken = new CancellationTokenSource();
                 populationSize = int.Parse(populationSizeTextBox.Text);
                 iterations = int.Parse(iterationsTextBox.Text);
-
+                MAX_MUTATIONS = int.Parse(mutationSizeTextBox.Text);
+                MUTATION_PROBABILITY = int.Parse(mutationTextBox.Text);
+                int duplicatesTimer = 0;
                 Task tMain = Task.Run(() =>
                 {
                     globalTour.Clear();
                     tourPopulation.Clear();
                     globalTourLength = Double.MaxValue;
                     Populate();
-                    tourPopulation.Sort();
+                    CalculateCostAllToursInPolulation();
+                    tourPopulation = tourPopulation.OrderBy(o => o.GetDistance()).ToList();
                     for (int k = 0; k < iterations; k++)
                     {
+                        duplicatesTimer++;
                         if(gaThreadCancellationToken.IsCancellationRequested)
                             break;
                         SimulateGeneration();
                         CalculateCostAllToursInPolulation();
-                        tourPopulation.Sort();
+                        tourPopulation = tourPopulation.OrderBy(o => o.GetDistance()).ToList();
                         if (globalTourLength > tourPopulation[0].GetDistance())
                         {
                             globalTour = tourPopulation[0];
@@ -132,11 +137,39 @@ namespace GeneticTSPWinForms
                             {
                                 drawnTourLengthLabel.Text = "Drawn tour length: " + globalTourLength;
                             }));
+                            labelLastSolution.BeginInvoke(new MethodInvoker(() =>
+                            {
+                                labelLastSolution.Text = "Best solution found @: " + k;
+                            }));
                         }
                         iterationLabel.BeginInvoke(new MethodInvoker(() =>
                         {
                             iterationLabel.Text = "Iteration: " + k;
                         }));
+                        if (duplicatesTimer > duplicatesRemovalInterval)
+                        {
+                            duplicatesTimer = 0;
+                            Tour Prev = tourPopulation[0];
+                            Tour Next;
+                            for (int i = 1; i < tourPopulation.Count; i++)
+                            {
+                                Next = tourPopulation[i];
+                                if (Prev.GetDistance() == Next.GetDistance())
+                                {
+                                    if (Prev.Hash() == Next.Hash())
+                                    {
+                                        Mutate(tourPopulation[i]);
+                                    } else
+                                    {
+                                        Prev = Next;
+                                    }
+                                } else
+                                {
+                                    Prev = Next;
+                                }
+                            }
+                            tourPopulation = tourPopulation.OrderBy(o => o.GetDistance()).ToList();
+                        }
                     }
                     startButton.BeginInvoke(new MethodInvoker(() =>
                     {
@@ -163,7 +196,7 @@ namespace GeneticTSPWinForms
                 graphics.DrawLine(Pens.Black, citiesPositions[globalTour[i], 0] / citiesPositionsToGuiRatio, citiesPositions[globalTour[i], 1] / citiesPositionsToGuiRatio,
                     citiesPositions[globalTour[i + 1], 0] / citiesPositionsToGuiRatio, citiesPositions[globalTour[i + 1], 1] / citiesPositionsToGuiRatio);
             }
-            graphics.DrawLine(Pens.Black, citiesPositions[globalTour[0], 0] / citiesPositionsToGuiRatio,
+            graphics.DrawLine(Pens.Red, citiesPositions[globalTour[0], 0] / citiesPositionsToGuiRatio,
                 citiesPositions[globalTour[0], 1] / citiesPositionsToGuiRatio,
                 citiesPositions[globalTour[globalTour.Count - 1], 0] / citiesPositionsToGuiRatio,
                 citiesPositions[globalTour[globalTour.Count - 1], 1] / citiesPositionsToGuiRatio);
@@ -176,7 +209,31 @@ namespace GeneticTSPWinForms
 
         private void button1_Click(object sender, EventArgs e)
         {
-            tourCityListTextBox.Text = globalTourLength.ToString(CultureInfo.CurrentCulture);
+            tourCityListTextBox.Text = "";
+            foreach (int i in globalTour) {
+                tourCityListTextBox.AppendText(i.ToString());
+                tourCityListTextBox.AppendText(Environment.NewLine);
+            }
+        }
+
+        private Tour WhatChanged(Tour B)
+        {
+            Tour C = new Tour();
+
+            for (int i = 0; i < globalTour.Count; i++)
+            {
+                int next;
+                if (i < globalTour.Count - 1)
+                {
+                    next = globalTour[i + 1];
+                } else
+                {
+                    next = globalTour[0];
+                }
+                int where = B.IndexOf(globalTour[i]); //do tutaj
+            }
+
+            return C;
         }
 
         private int FindPartner()
@@ -207,11 +264,12 @@ namespace GeneticTSPWinForms
 
         private Tour Crossover(Tour A, Tour B)
         { //Robi crossover rozwiazania A i B
+            int unique = 0;
             Tour C = new Tour();
             int index = 0;
             //C = A;
-            int start = rand.Next(0, numberOfCities - 2);
-            int len = rand.Next(1, (numberOfCities - 1 - start));
+            int start = rand.Next(0, numberOfCities * 6 / 10);
+            int len = rand.Next(numberOfCities * 3 / 10, (numberOfCities - 1 - start));
             List<int> S;
             S = A.GetRange(start, len);
             int i = 0;
@@ -222,6 +280,8 @@ namespace GeneticTSPWinForms
                     C.Add(B[i]);
                     index++;
                 }
+                else
+                    unique++;
                 i++;
             }
             C.AddRange(S);
@@ -230,11 +290,16 @@ namespace GeneticTSPWinForms
             {
                 if (!S.Contains(B[i]))
                 {
+                    unique++;
                     C.Add(B[i]);
                     index++;
                 }
+                else
+                    unique++;
                 i++;
             }
+            if (unique == numberOfCities - len)
+                Mutate(C);
             return C;
         }
 
@@ -251,15 +316,17 @@ namespace GeneticTSPWinForms
 
         private void SimulateGeneration()
         { //robi jeden krok populacji, nowa populacja ma rozmiar identyczny z poprzednią
+            
             List<Tour> newTourPopulation = new List<Tour>();
             int FitToCopy = tourPopulation.Count * TOP_SURVIVORS / 100;
-            int UnfitToCopy = tourPopulation.Count * BOTTOM_SURVIVORS / 100;
+            int UnfitToCopy = BOTTOM_SURVIVORS;
             int i;
             for (i = 0; i < FitToCopy; i++)
             { //kopiowanie najbardziej fit
                 if (i != 0 && rand.Next(1, 100) <= MUTATION_PROBABILITY)
                 {
-                    Tour C = tourPopulation[i];
+                    Tour C = new Tour();
+                    C.AddRange(tourPopulation[i].ToArray());
                     Mutate(C);
                     newTourPopulation.Add(C);
                 }
@@ -275,7 +342,7 @@ namespace GeneticTSPWinForms
             }
             for (; i < tourPopulation.Count; i++)
             {
-                if (rand.Next(1, 100) <= MUTATION_PROBABILITY)
+                if (rand.Next(1, 100) <= MUTATION_PROBABILITY * 2)
                 {
                     Tour C = tourPopulation[i];
                     Mutate(C);
@@ -292,7 +359,8 @@ namespace GeneticTSPWinForms
                 Greedy(city);
             }
             CalculateCostAllToursInPolulation(); //musimy miec po czym sortowac
-            tourPopulation.Sort(); //sortujemy, zeby reszta tworzonych zaraz tras preferowala tworzenie sie z lepszych tras
+            tourPopulation = tourPopulation.OrderBy(o=>o.GetDistance()).ToList();
+            //tourPopulation.Sort(); //sortujemy, zeby reszta tworzonych zaraz tras preferowala tworzenie sie z lepszych tras
             while (tourPopulation.Count < populationSize)
             {
                 Tour Tour = Breed();
@@ -342,6 +410,26 @@ namespace GeneticTSPWinForms
                 notUsedCities.Remove(chosenNode);
             }
             tourPopulation.Add(tour);
+        }
+
+        private void label2_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label3_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

@@ -14,11 +14,22 @@ namespace GeneticTSPWinForms
         public void UpdateDistance(double[,] distances)
         {
             distance = 0;
-            for (int i = 0; i < this.Count-1; i++)
+            for (int i = 0; i < this.Count - 1; i++)
             {
                 distance += distances[this[i], this[i + 1]];
             }
             distance += distances[this[0], this[this.Count - 1]];
+        }
+
+        public int Hash()
+        {
+            int hash = this[0];
+            for (int i = 0; i < this.Count; i++)
+            {
+                hash ^= this[i];
+            
+            }
+            return hash;
         }
 
         public double GetDistance()
