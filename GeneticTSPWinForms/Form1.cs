@@ -20,7 +20,7 @@ namespace GeneticTSPWinForms
         private int[,] citiesPositions;
         private double[,] distancesBetweenCities;
         private int citiesPositionsToGuiRatio;
-        private List<int> globalTour;
+        private Tour globalTour;
         private List<Tour> tourPopulation;
         private List<Tour> tempPopulation;
         private double globalTourLength;
@@ -44,7 +44,7 @@ namespace GeneticTSPWinForms
         {
             InitializeComponent();
             globalTourLength = Double.MaxValue;
-            globalTour = new List<int>();
+            globalTour = new Tour();
             tourPopulation = new List<Tour>();
             tempPopulation = new List<Tour>();
             rand = new Random();
@@ -135,9 +135,10 @@ namespace GeneticTSPWinForms
                         tourPopulation.Sort();
                         if (globalTourLength > tourPopulation[0].GetDistance())
                         {
+                            Tour Changed = findReplacement(tourPopulation[0], globalTour);
                             globalTour = tourPopulation[0];
                             globalTourLength = tourPopulation[0].GetDistance();
-                            DrawTour();
+                            DrawTour(Changed);
                             drawnTourLengthLabel.BeginInvoke(new MethodInvoker(() =>
                             {
                                 drawnTourLengthLabel.Text = "Drawn tour length: " + globalTourLength;
@@ -192,7 +193,7 @@ namespace GeneticTSPWinForms
             }
         }
 
-        private void DrawTour()
+        private void DrawTour(Tour whatsNew)
         {
             Image cityImage = new Bitmap(tourDiagram.Width, tourDiagram.Height);
             Graphics graphics = Graphics.FromImage(cityImage);
@@ -200,12 +201,32 @@ namespace GeneticTSPWinForms
             {
                 graphics.DrawEllipse(Pens.Black, citiesPositions[i, 0] / citiesPositionsToGuiRatio - 2, citiesPositions[i, 1] / citiesPositionsToGuiRatio - 2, 4, 4);
             }
+            Pen Color = Pens.Black;
+
             for (int i = 0; i < globalTour.Count - 1; i++)
             {
-                graphics.DrawLine(Pens.Black, citiesPositions[globalTour[i], 0] / citiesPositionsToGuiRatio, citiesPositions[globalTour[i], 1] / citiesPositionsToGuiRatio,
+                if (whatsNew.Count > 0) 
+                if (whatsNew.IndexOf(globalTour[i + 1]) != -1)
+                {
+                    Color = Pens.Red;
+                }
+                else
+                {
+                    Color = Pens.Black;
+                }
+                graphics.DrawLine(Color, citiesPositions[globalTour[i], 0] / citiesPositionsToGuiRatio, citiesPositions[globalTour[i], 1] / citiesPositionsToGuiRatio,
                     citiesPositions[globalTour[i + 1], 0] / citiesPositionsToGuiRatio, citiesPositions[globalTour[i + 1], 1] / citiesPositionsToGuiRatio);
             }
-            graphics.DrawLine(Pens.Red, citiesPositions[globalTour[0], 0] / citiesPositionsToGuiRatio,
+            if (whatsNew.Count > 0)
+                if (whatsNew.IndexOf(globalTour[0]) != -1)
+            {
+                Color = Pens.Red;
+            }
+            else
+            {
+                Color = Pens.Black;
+            }
+            graphics.DrawLine(Color, citiesPositions[globalTour[0], 0] / citiesPositionsToGuiRatio,
                 citiesPositions[globalTour[0], 1] / citiesPositionsToGuiRatio,
                 citiesPositions[globalTour[globalTour.Count - 1], 0] / citiesPositionsToGuiRatio,
                 citiesPositions[globalTour[globalTour.Count - 1], 1] / citiesPositionsToGuiRatio);
@@ -439,6 +460,40 @@ namespace GeneticTSPWinForms
         private void label3_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private Tour findReplacement(Tour Next, Tour Prev)
+        {
+            Tour B = new Tour();
+            int k, p;
+            for (int i = 0; i < Prev.Count; i++)
+            {
+                k = Next.IndexOf(Prev[i]);
+                p = k;
+                if (k == numberOfCities - 1)
+                {
+                    p = 0;
+                }
+                else
+                {
+                    p += 1;
+                }
+                if (i != Next.Count - 1)
+                {
+                    if (Next[p] != Prev[i + 1])
+                    {
+                        B.Add(Next[p]);
+                    }
+                }
+                else
+                {
+                    if (Next[p] != Prev[0])
+                    {
+                        B.Add(Next[p]);
+                    }
+                }
+            }
+            return B;
         }
     }
 }
