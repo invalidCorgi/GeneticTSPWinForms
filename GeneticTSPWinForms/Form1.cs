@@ -387,6 +387,10 @@ namespace GeneticTSPWinForms
             {
                 Greedy(city);
             }
+            for (int city = 0; city < numberOfCities; city++)
+            {
+                tourPopulation.Add(generateRandomTour());
+            }
             CalculateCostAllToursInPolulation(); //musimy miec po czym sortowac
             //tourPopulation = tourPopulation.OrderBy(o=>o.GetDistance()).ToList();
             tourPopulation.Sort(); //sortujemy, zeby reszta tworzonych zaraz tras preferowala tworzenie sie z lepszych tras
@@ -494,6 +498,23 @@ namespace GeneticTSPWinForms
                 }
             }
             return B;
+        }
+
+        private Tour generateRandomTour()
+        {
+            Tour tour = new Tour();
+            List<int> notUsedNodes = new List<int>();
+            for (int i = 0; i < numberOfCities; i++)
+            {
+                notUsedNodes.Add(i);
+            }
+            for (int i = numberOfCities; i > 0; i--)
+            {
+                int random = rand.Next(i);
+                tour.Add(notUsedNodes[random]);
+                notUsedNodes.RemoveAt(random);
+            }
+            return tour;
         }
     }
 }
