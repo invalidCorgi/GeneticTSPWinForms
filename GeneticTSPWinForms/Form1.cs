@@ -383,11 +383,11 @@ namespace GeneticTSPWinForms
 
         private void Populate() //tworzenie poczatkowej populacji - greedy dla kazdego miasta + zapelnienie reszty ich krzyzowkami i mutacjami
         {
-            for (int city = 0; city < numberOfCities; city++)
+            for (int city = 0; city < numberOfCities && city < populationSize; city++)
             {
                 Greedy(city);
             }
-            for (int city = 0; city < numberOfCities; city++)
+            for (int city = numberOfCities; city < 2*numberOfCities && city < populationSize; city++)
             {
                 tourPopulation.Add(generateRandomTour());
             }
